@@ -17,29 +17,27 @@ filename = args['<file>']
 radius = float(filename.split('R')[-1].split('_')[0])
 Nmax = int(filename.split('Nmax')[-1].split('.pkl')[0])
 Lmax = int(filename.split('Lmax')[-1].split('_')[0])
+twidth = float(filename.split('_t')[-1].split('_')[0])
+rwidth = float(filename.split('_r')[-1].split('_')[0])
 
 data = pickle.load(open(filename,'rb'))
 r_spots = data['r_spots']
 θ_spots = data['θ_spots']
-epsilons = data['epsilons']
+epsilons = data['epsilons'].transpose()
+
+θ_plot, r_plot = np.meshgrid(r_spots, θ_spots)
+#θ_plot, r_plot = np.meshgrid(θ_spots, r_spots)
 
 print(len(r_spots), len(θ_spots))
 
 import matplotlib.pyplot as plt
-plt.scatter(θ_spots/np.pi, epsilons[0,:], label='r_force/R = {}'.format(r_spots[0]/radius))
-plt.scatter(θ_spots/np.pi, epsilons[-1,:], label='r_force/R = {}'.format(r_spots[-1]/radius))
-plt.yscale('log')
-plt.xlabel('theta/pi')
-plt.ylabel(r'$\epsilon$')
-plt.title('Lmax = {} / Nmax = {} / R = {}'.format(Lmax, Nmax, radius))
-plt.legend(loc='best')
-plt.show()
-
-for i, θv in enumerate(θ_spots):
-    plt.scatter(r_spots/radius, epsilons[:, i], label=r'$\theta$_force/$\pi$ = {}'.format(θv/np.pi))
-    plt.yscale('log')
-    plt.xlabel('radius/R')
-    plt.ylabel(r'$\epsilon$')
-plt.title('Lmax = {} / Nmax = {} / R = {}'.format(Lmax, Nmax, radius))
-#plt.legend(loc='best')
+good = θ_plot <= np.pi/2
+plt.pcolormesh(θ_plot, r_plot, np.log10(epsilons), cmap='viridis')
+bar = plt.colorbar()
+bar.set_label(r'$\log_{10}(\epsilon)$')
+plt.ylabel('theta')
+plt.xlabel(r'$r$')
+plt.xlim(0, radius)
+plt.title(r'(Lmax,Nmax) = ({}, {}) / $\sigma_{{\theta}}$, $\sigma_{{r}}$ = ({}, {}) / R = {}'.format(Lmax, Nmax, twidth, rwidth, radius))
+plt.savefig('plots/growth_rates_{}.png'.format(filename.split('/')[-1].split('.pkl')[0]), dpi=300)
 plt.show()
