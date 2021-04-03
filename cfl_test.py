@@ -12,6 +12,8 @@ Options:
     --Nr=<N>             Number of radial points to sample CFL growth at [default: 5]
     --Ntheta=<N>         Number of latitude points to sample CFL growth at [default: 5]
 
+    --safety=<safety>    CFL safety factor [default: 1]
+
     --theta_stdev=<ts>   Stdev of gaussian in theta direction [default: 0.02]
     --r_stdev=<ts>       Stdev of gaussian in radial direction [default: 0.02]
 
@@ -162,27 +164,29 @@ def run_problem(r_force, θ_force, dt, report=False):
         a['c'] /= np.sqrt(E_now)
         E_now = 1
         if convergence < 1e-6:
-            return u_max, epsilon
+            return u_max, epsilon, factor
 
 #Forcing locations
 if args['--shell']:
     r_min, r_max = 0.01, 1
 else:
     r_min, r_max = 5*dr/radius, 1
-theta_min, theta_max = 0.1, 0.9
+theta_min, theta_max = 0.5, 0.9
 r_spots = radius*np.linspace(r_min, r_max, Nr)
 θ_spots = np.pi * np.linspace(theta_min, theta_max, Ntheta)
 
 #timestep
-safety = 1
+safety = float(args['--safety'])
 dt = safety * radius / Lmax
 
 #Run simulations
+factors = np.zeros((len(r_spots), len(θ_spots)))
 epsilons = np.zeros((len(r_spots), len(θ_spots)))
 u_maxs = np.zeros((len(r_spots), len(θ_spots)))
 for i, r_force in enumerate(r_spots):
     for j, θ_force in enumerate(θ_spots):
-        u_max, epsilon = run_problem(r_force, θ_force, dt, report=True)
+        u_max, epsilon, factor = run_problem(r_force, θ_force, dt, report=True)
+        factors[i,j] = factor
         epsilons[i,j] = epsilon
         u_maxs[i,j] = u_max
         logger.info("θ/pi: {:.3f}, r/R: {:.3f}, epsilon: {:.3e}, u_max: {:.3e}".format(θ_force/np.pi, r_force/radius, epsilon, u_max))
@@ -190,11 +194,11 @@ for i, r_force in enumerate(r_spots):
 
 #Save output
 import pickle
-data = {'Nmax': Nmax, 'Lmax' : Lmax, 'r_spots' : r_spots, 'θ_spots': θ_spots, 'epsilons': epsilons, 'u_maxs': u_maxs}
+data = {'Nmax': Nmax, 'Lmax' : Lmax, 'r_spots' : r_spots, 'θ_spots': θ_spots, 'epsilons': epsilons, 'u_maxs': u_maxs, 'factors': factors}
 if args['--shell']:
-    pickle.dump(data, open('dt_epsilons_shel_R{}_stdevs_t{}_r{}_Lmax{}_Nmax{}.pkl'.format(radius, args['--theta_stdev'], args['--r_stdev'], Lmax, Nmax),'wb'))
+    pickle.dump(data, open('dt_epsilons_shell_safety{}_R{}_stdevs_t{}_r{}_Lmax{}_Nmax{}.pkl'.format(radius, args['--safety'], args['--theta_stdev'], args['--r_stdev'], Lmax, Nmax),'wb'))
 else:
-    pickle.dump(data, open('dt_epsilons_ball_R{}_stdevs_t{}_r{}_Lmax{}_Nmax{}.pkl'.format(radius, args['--theta_stdev'], args['--r_stdev'], Lmax, Nmax),'wb'))
+    pickle.dump(data, open('dt_epsilons_ball_safety{}_R{}_stdevs_t{}_r{}_Lmax{}_Nmax{}.pkl'.format(radius, args['--safety'], args['--theta_stdev'], args['--r_stdev'], Lmax, Nmax),'wb'))
 
 ##Plot
 #import matplotlib.pyplot as plt
