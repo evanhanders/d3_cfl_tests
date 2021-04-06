@@ -25,19 +25,20 @@ data = pickle.load(open(filename,'rb'))
 r_spots = data['r_spots']
 θ_spots = data['θ_spots']
 epsilons = data['epsilons'].transpose()
+factors = data['factors'].transpose()
 
-θ_plot, r_plot = np.meshgrid(r_spots, θ_spots)
+r_plot, θ_plot = np.meshgrid(r_spots, θ_spots)
 #θ_plot, r_plot = np.meshgrid(θ_spots, r_spots)
 
 print(len(r_spots), len(θ_spots))
 
 good = θ_plot <= np.pi/2
 #plt.pcolormesh(θ_plot, r_plot, np.log10(epsilons), cmap='viridis')
-plt.pcolormesh(θ_plot, r_plot, epsilons, cmap='viridis', vmin=0, vmax=2)
+plt.pcolormesh(r_plot, θ_plot/np.pi, factors - 1, cmap='RdBu_r', vmin=-2, vmax=2, shading='nearest')
 bar = plt.colorbar()
 bar.set_label(r'$\epsilon$')
 #bar.set_label(r'$\log_{10}(\epsilon)$')
-plt.ylabel('theta')
+plt.ylabel(r'$\theta/\pi$')
 plt.xlabel(r'$r$')
 plt.xlim(0, radius)
 plt.title(r'(Lmax,Nmax) = ({}, {}) / $\sigma_{{\theta}}$, $\sigma_{{r}}$ = ({}, {}) / R = {}'.format(Lmax, Nmax, twidth, rwidth, radius))
