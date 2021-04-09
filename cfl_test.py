@@ -14,8 +14,8 @@ Options:
 
     --safety=<safety>    CFL safety factor [default: 1]
 
-    --theta_stdev=<ts>   Stdev of gaussian in theta direction [default: 0.02]
-    --r_stdev=<ts>       Stdev of gaussian in radial direction [default: 0.02]
+    --theta_stdev=<ts>   Stdev of gaussian in theta direction [default: 0.04]
+    --r_stdev=<ts>       Stdev of gaussian in radial direction [default: 0.04]
 
     --mesh=<mesh>        Processor mesh
 
@@ -117,6 +117,17 @@ r_vec.set_scales(dealias)
 r_vec['g'][2] = r
 r_vec = operators.Grid(r_vec).evaluate()
 
+# Problem
+problem = problems.IVP([a,])
+problem.add_equation((ddt(a) + lapA - lapA, -dot(u, grad(a))))
+
+# Solver
+solver = solvers.InitialValueSolver(problem, ts, matrix_coupling=[False, False, True])
+solver.stop_iteration = np.inf
+
+reducer = GlobalArrayReducer(d.comm_cart)
+
+noise = np.random.rand(*a['g'].shape)
 
 def gaussian(x, mean, sigma):
     return np.exp(-(x-mean)**2/(2*sigma**2))
@@ -126,31 +137,23 @@ def run_problem(r_force, θ_force, dt, report=False):
     u['g'] = cross(r_vec, omega*ez).evaluate()['g']
 
 
-    a['g'] = 1e-1*np.random.rand(*a['g'].shape)
+    a['g'] = 1e-1*noise
     a.require_scales(0.5)
     a['c']
     a['g']
     a.require_scales(dealias)
 
-    # Problem
-    problem = problems.IVP([a,])
-    problem.add_equation((ddt(a) + lapA - lapA, -dot(u, grad(a))))
-
-    # Solver
-    solver = solvers.InitialValueSolver(problem, ts, matrix_coupling=[False, False, True])
-    solver.stop_iteration = np.inf
-
-    reducer = GlobalArrayReducer(d.comm_cart)
     E0 = reducer.reduce_scalar(np.sum(a['c']**2), MPI.SUM)
     E_now = E_prev = E0
     factor_prev = factor = 2
     epsilon_prev = epsilon = 1
+    convergence = 1
 
     u_max = reducer.reduce_scalar(np.abs(u['g']).max(), MPI.MAX)
     logger.info('Max velocity: {:.4f}'.format(u_max))
 
     # Main loop
-    while solver.ok:
+    while solver.ok and convergence > 1e-6:
         solver.step(dt)
         factor_prev = factor
         epsilon_prev = epsilon
@@ -163,8 +166,7 @@ def run_problem(r_force, θ_force, dt, report=False):
             logger.info("Iter: {:05d}, Eprev: {:.03e}, Enow: {:.03e}, Epsilon: {:.03e}, convergence: {:.03e}".format(solver.iteration, E_prev, E_now, epsilon, convergence))
         a['c'] /= np.sqrt(E_now)
         E_now = 1
-        if convergence < 1e-6:
-            return u_max, epsilon, factor
+    return u_max, epsilon, factor
 
 #Forcing locations
 if args['--shell']:
@@ -191,6 +193,8 @@ for i, r_force in enumerate(r_spots):
         u_maxs[i,j] = u_max
         logger.info("θ/pi: {:.3f}, r/R: {:.3f}, epsilon: {:.3e}, u_max: {:.3e}".format(θ_force/np.pi, r_force/radius, epsilon, u_max))
         gc.collect()
+        if not solver.ok:
+            raise ValueError("Solver state not OK; something went wrong in timestepping")
 
 #Save output
 import pickle
