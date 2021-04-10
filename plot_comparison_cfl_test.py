@@ -36,8 +36,10 @@ for filename in files:
     plt.plot(r_spots, mean_epsilon_of_r, label = r'(Lmax,Nmax) = ({}, {}) / $\sigma_{{\theta}}$, $\sigma_{{r}}$ = ({}, {})'.format(Lmax, Nmax, twidth, rwidth))
     plt.xlabel('r')
     plt.ylabel(r'$\epsilon$')
-    plt.xlim(0, radius)
+    plt.xlim(r_spots.min()/2, radius)
 
+plt.yscale('log')
+plt.xscale('log')
 plt.legend(fontsize=10)
 plt.savefig('plots/growth_rate_comparison.png'.format(filename.split('/')[-1].split('.pkl')[0]), dpi=300)
 
@@ -62,8 +64,14 @@ for filename in files:
     plt.plot(r_spots, mean_epsilon_of_r, label = r'(Lmax,Nmax) = ({}, {}) / $\sigma_{{\theta}}$, $\sigma_{{r}}$ = ({}, {})'.format(Lmax, Nmax, twidth, rwidth))
     plt.xlabel('r')
     plt.ylabel(r'$\epsilon/\epsilon_{\rm{max}}$')
-    plt.xlim(0, radius)
+    plt.xlim(r_spots.min()/2, radius)
 
+    r_vals = np.logspace(np.log10(r_spots.min()), np.log10(r_spots.max()), 100)
+plt.plot(r_vals, 3e-4*r_vals**(-2), label=r'$r^{-2}$', c='k', lw=2)
+#plt.ylim(0.1, 1.5)
+
+plt.yscale('log')
+plt.xscale('log')
 plt.legend(fontsize=10)
 plt.savefig('plots/growth_rate_normalized_comparison.png'.format(filename.split('/')[-1].split('.pkl')[0]), dpi=300)
 plt.show()
