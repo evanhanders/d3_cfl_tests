@@ -12,7 +12,7 @@ Options:
     --Nr=<N>             Number of radial points to sample CFL growth at [default: 5]
     --Ntheta=<N>         Number of latitude points to sample CFL growth at [default: 5]
 
-    --safety=<safety>    CFL safety factor [default: 1]
+    --safety=<safety>    CFL safety factor [default: 0.1]
 
     --theta_stdev=<ts>   Stdev of gaussian in theta direction [default: 0.04]
     --r_stdev=<ts>       Stdev of gaussian in radial direction [default: 0.04]
@@ -200,9 +200,9 @@ for i, r_force in enumerate(r_spots):
 import pickle
 data = {'Nmax': Nmax, 'Lmax' : Lmax, 'r_spots' : r_spots, 'θ_spots': θ_spots, 'epsilons': epsilons, 'u_maxs': u_maxs, 'factors': factors}
 if args['--shell']:
-    pickle.dump(data, open('dt_epsilons_shell_safety{}_R{}_stdevs_t{}_r{}_Lmax{}_Nmax{}.pkl'.format(radius, args['--safety'], args['--theta_stdev'], args['--r_stdev'], Lmax, Nmax),'wb'))
+    pickle.dump(data, open('dt_epsilons_shell_R{}_safety{}_stdevs_t{}_r{}_Lmax{}_Nmax{}.pkl'.format(radius, args['--safety'], args['--theta_stdev'], args['--r_stdev'], Lmax, Nmax),'wb'))
 else:
-    pickle.dump(data, open('dt_epsilons_ball_safety{}_R{}_stdevs_t{}_r{}_Lmax{}_Nmax{}.pkl'.format(radius, args['--safety'], args['--theta_stdev'], args['--r_stdev'], Lmax, Nmax),'wb'))
+    pickle.dump(data, open('dt_epsilons_ball_R{}_safety{}_stdevs_t{}_r{}_Lmax{}_Nmax{}.pkl'.format(radius, args['--safety'], args['--theta_stdev'], args['--r_stdev'], Lmax, Nmax),'wb'))
 
 ##Plot
 #import matplotlib.pyplot as plt
